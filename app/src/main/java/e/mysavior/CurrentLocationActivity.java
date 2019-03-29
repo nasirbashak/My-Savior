@@ -2,6 +2,7 @@ package e.mysavior;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
@@ -10,6 +11,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -25,32 +27,44 @@ public class CurrentLocationActivity extends AppCompatActivity implements Locati
     TextView tvLatitude, tvAddress, mtextView;
     TextView tvLongitude;
     LocationManager locationManager;
+    TextView t1, t2;
     Location currentLocation;
 
-    double latitude = 13.0864168;
-    double longitude = 77.5535868;
+    double latitude ;//= 13.0864168;
+    double longitude ;//= 77.5535868;
 
-    String phoneNo,message,destination;
+    String phoneNo, message, destination;
+
+    public static final String MyPREFERENCES = "MyPrefs" ;
+    public static final String Lat = "latitude";
+    public static final String Longi = "longitude";
+    SharedPreferences sharedpreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_my);
+        setContentView(R.layout.activity_send_message);
         tvAddress = (TextView) findViewById(R.id.tvAddress);
         mtextView = (TextView) findViewById(R.id.textView);
+        t1 = (TextView) findViewById(R.id.textLat);
+        t2 = (TextView) findViewById(R.id.textLong);
+
+        sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
+
+
         CheckPermission();
-        getLatLang();
-        mySms();
+        //getLatLang();
+        // mySms();
 
 
     }
 
 
-    public void mySms(){
+    public void mySms() {
 
         phoneNo = "8722086222";
-        message     = "My location is https://maps.google.com/?q="+latitude+","+longitude;
-        destination = "https://www.google.com/maps/search/hospital/@"+latitude+","+longitude;//+",14z/data=!3m1!4b1";
+        message = "My location is https://maps.google.com/?q=" + currentLocation.getLatitude() + "," + currentLocation.getLongitude();
+        destination = "Nearby hospitals: https://www.google.com/maps/search/hospital/@" + currentLocation.getLatitude() + "," + currentLocation.getLongitude();//+",14z/data=!3m1!4b1";
         SmsManager smsManager = SmsManager.getDefault();
         smsManager.sendTextMessage(phoneNo, null, message, null, null);
         smsManager.sendTextMessage(phoneNo, null, destination, null, null);
@@ -65,7 +79,6 @@ public class CurrentLocationActivity extends AppCompatActivity implements Locati
         }
 
     }
-
 
 
     /* Request updates at startup */
@@ -86,7 +99,7 @@ public class CurrentLocationActivity extends AppCompatActivity implements Locati
     public void getLocation() {
         try {
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 5, this);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
         } catch (SecurityException e) {
             e.printStackTrace();
         }
@@ -105,19 +118,44 @@ public class CurrentLocationActivity extends AppCompatActivity implements Locati
 
             currentLocation = location;
         } else {
-            double latitude = 13.0864168;
-            double longitude = 77.5535868;
+
+            SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+
+
+            double latitude =  Double.parseDouble(preferences.getString(Lat,"lat"));//13.2032629;
+            double longitude =  Double.parseDouble(preferences.getString(Longi,"longi"));
+            Toast.makeText(this, latitude+"\n"+longitude, Toast.LENGTH_SHORT).show();
             currentLocation.setLatitude(latitude);
             currentLocation.setLongitude(longitude);
         }
 
-        tvLongi = String.valueOf(currentLocation.getLongitude());
-        tvLati = String.valueOf(currentLocation.getLatitude());
-        mtextView.setText(tvLongi);
+        t1.setText(currentLocation.getLatitude() + "");
+        t2.setText(currentLocation.getLongitude() + "");
+        if(currentLocation.getLatitude()>0 && currentLocation.getLongitude()>0) {
+
+            SharedPreferences.Editor editor = sharedpreferences.edit();
+
+            editor.putString(Lat, currentLocation.getLatitude()+"" );
+            editor.putString(Longi, currentLocation.getLongitude() + "");
+
+            editor.commit();
+
+
+            t1.setText(currentLocation.getLatitude()+"new" + "");
+            t2.setText(currentLocation.getLongitude()+"new" + "");
+
+
+
+            mySms();
+        }
+        // tvLongi = String.valueOf(currentLocation.getLongitude());
+        // tvLati = String.valueOf(currentLocation.getLatitude());
+        // mtextView.setText(tvLongi);
 
 
     }
-    private void getLatLang(){
+
+    private void getLatLang() {
 
         String result = null;
         if (currentLocation != null) {
@@ -134,7 +172,7 @@ public class CurrentLocationActivity extends AppCompatActivity implements Locati
         }
 
 
-        tvAddress.setText(result);
+        //tvAddress.setText(result);
 
     }
 
@@ -172,7 +210,7 @@ public class CurrentLocationActivity extends AppCompatActivity implements Locati
                 default:
                     locationAddress = null;
             }
-            tvAddress.setText(locationAddress);
+            //tvAddress.setText(locationAddress);
         }
     }
 
